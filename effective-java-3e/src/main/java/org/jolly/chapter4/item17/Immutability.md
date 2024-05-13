@@ -1,0 +1,66 @@
+## Item 17 - minimize mutability
+
+- immutable classes are easier to design, implement and use than mutable classes
+  - less error prone and are more secure
+- to make a class immutable:
+  - don't provide methods that modify the object's state (can be relaxed to improve performance)
+  - ensure that the class cannot be extended
+    - prevents careless and malicious subclasses from compromising the immutable behavior of the class by behaving as if the object's state has changed
+  - make all fields final (can be relaxed to improve performance)
+    - necessary to ensure correct behavior if a reference to a newly created instance is passed from one thread to another without synchronization, as spelled out in the [*memory model*](https://docs.oracle.com/javase/specs/jls/se21/html/jls-17.html)
+  - make all fields private
+    - prevents clients from obtaining access to mutable objects referred to by fields and modifying these objects directly
+  - ensure exclusive access to any mutable components
+    - if our class has any fields that refer to mutable objects, ensure that clients of the class cannot obtain references to these objects
+    - never initialize such a field to a client-provided object reference or return the field from an accessor
+    - make *defensive copies* in constructors, accessors, and `readObject` methods
+- use *functional* approach in methods by returning the result of applying a function to their operand, without modifying it
+  - by creating and returning a new instance rather than modifying the given instance
+- immutable objects are **simple**
+  - can be in exactly 1 state, the state in which it was created
+  - mutable objects can have arbitrarily complex state spaces
+- immutable objects are inherently **thread-safe**, require no synchronization
+  - easiest approach to achieve thread safety
+- immutable objects can be **shared freely**
+  - should encourage clients to reuse existing instances wherever possible
+  - 1 easy way is to provide `public static final` constants for commonly used values
+  - can provide static factories that cache frequently requested instances to avoid creating new instances when existing ones would do
+  - never have to make *defensive copies* of them
+  - need not and should not provide a `clone` method or *copy constructor* on an immutable class
+- immutable objects make great building blocks for other objects
+  - much easier to maintain the invariants of a complex object if we know that its component objects will not change underneath it
+  - make great map keys and set elements
+    - don't have to worry about their values changing once they're in the map or set, which would destory the map or set's invariants
+- immutable objects provide failure atomicity for free
+  - state never changes, no possibility of temporary inconsistency
+- major disadvantage of immutable class is that they require a separate object for each distinct value
+  - creating these objects can be costly, especially if they are large
+  - the performance problem is magnified if we perform a multistep operation that generates a new object at every step, eventually discarding all objects except the final result
+  - 2 approaches to coping with this problem:
+    - to guess which multistep operations will be commonly required and provide them as primitives
+      - e.g. `BigInteger` has a package-private mutable "companion class" that it uses to speed up multistep operations such as modular exponentiation
+      - this works fine if we can accurately predict which complex operations clients will want to perform on our immutable class
+    - provide a `public` mutable companion class
+      - e.g. `String` class, whose mutable companion is `StringBuilder`
+- to guarantee immutability, a class must not permit itself to be subclassed, 2 approaches to do this:
+  - make the class `final`
+  - (more flexible) make all of its constructors `private` or `package-private` and add `public` static factories in place of public constructors
+    - to its clients that reside outside its package, it is effectively `final` because it is impossible to extend a class that comes from another package that lacks a `public` or `protected` constructor
+    - makes it possible to tune the performance of the class in subsequent releases by improving the object-caching capabilities of the static factories
+- the 2 rules of (i) no methods may modify the object (ii) all fields must be final can be relaxed to improve performance
+  - no method may produce an *externally visible* change in the object's state
+  - some immutable classes have 1 or more nonfinal fields in which they cache the results of expensive computations the 1st time they are needed
+  - e.g. `PhoneNumber`'s `hashCode` method in item 11 displays this technique of *lazy initialization*
+  - 1 caveat should be added concerning serializability
+    - if our immutable class implements `Serializable` and it contains 1 or more fields that refer to mutable objects
+    - must provide explicit `readObject` or `readResolve` method, or use the `ObjectOutputStream.writeUnshared` and `ObjectInputStream.readUnshared` methods, even if the default serialized form is acceptable
+    - otherwise, an attacker could create a mutable instance of our class 
+- if a class cannot be made immutable, limit its mutability as much as possible
+- declare every field `private final` unless there's good reason to do otherwise
+- constructors should create fully initialized objects with all of their invariants established
+  - don't provide a public initialization method separate from the constructor or static factory unless there's a *compelling* reason to do so
+  - don't provide a "reinitialize" method that enables an object to be reused as if it has been constructed with a different initial state
+
+
+#### References
+- [Make sure spring components are stateless](https://stackoverflow.com/questions/41803680/make-sure-spring-component-is-stateless)

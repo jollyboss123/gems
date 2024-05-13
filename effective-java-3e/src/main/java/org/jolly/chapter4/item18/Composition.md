@@ -1,0 +1,28 @@
+## Item 17 - composition over inheritance
+
+- unlike method invocation, inheritance violates encapsulation
+  - a subclass depends on the implementation details of its superclass for its proper function
+  - as a consequence, a subclass must evolve in tandem with its superclass
+- one might think that it is safe to extend a class if we merely add new methods and refrain from overriding existing methods
+  - if the superclass acquires a new method in a subsequent release, 
+    - if we have given the subclass a method with the same signature and a different return type, our subclass will no longer compile
+    - if we have given the subclass a method with the same signature and return type, we're now overriding it
+- composition
+  - give the class a private field that references an instance of the existing class
+  - the existing class becomes a component of this new class
+  - *forwarding*
+    - each instance method in this new class invokes the corresponding method on the contained instance of the existing class and returns the results
+  - the resulting class will be rock solid, with no dependencies on the implementation details of the existing class
+- use a *wrapper* and *forwarding* class i.e. composition and forwarding approach
+  - the wrapper class is more flexible than the inheritance-based approach, which works only for a single concrete class and requires a separate constructor for each supported constructor in the superclass
+  - 1 caveat is that wrapper classes are not suited for use in *callback frameworks* (objects pass self-references to other objects for subsequent invocations)
+    - because a wrapped object does not know it's a wrapper, it passes a reference to itself (`this`) and callbacks elude the wrapper
+    - [the SELF problem](https://web.media.mit.edu/~lieber/Lieberary/OOP/Delegation/Delegation.html)
+- inheritance is appropriate only in circumstances where the subclass really is a *subtype* of the superclass
+  - a class *B* should only extend a class *A* only if an "is-a" relationship exists between 2 classes
+  - if the answer is no, *B* should contain a private instance of *A* and expose a different API
+  - *A* is not an essential part of *B*, merely a detail of its implementation
+  - obvious violations in Java:
+    - stack is not a vector, therefore `Stack` should not extend `Vector`
+    - a property list is not a hash table, therefore `Properties` should not extend `HashTable`
+  - 
